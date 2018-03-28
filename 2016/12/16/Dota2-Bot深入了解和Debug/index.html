@@ -1,0 +1,877 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.useso.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="AI,Lua,Dota2," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="上一篇Dota2-Bot编写探索大体介绍了一下Dota2 Bot脚本的总体设计和结构，不过我意识到，仅仅靠这些，想写出一个像样子的Bot是远远不够的。   从之前的阅读可以发现，Dota2的Bot脚本是“重写”机制的，你没有实现的部分将又默认系统实现，这就要求我们对系统自带的AI有所了解。当然，对一些相关API的了解也是基础。">
+<meta name="keywords" content="AI,Lua,Dota2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dota2-Bot深入了解和Debug">
+<meta property="og:url" content="http://yoursite.com/2016/12/16/Dota2-Bot深入了解和Debug/index.html">
+<meta property="og:site_name" content="Yanjiasen4&#39;s Blog">
+<meta property="og:description" content="上一篇Dota2-Bot编写探索大体介绍了一下Dota2 Bot脚本的总体设计和结构，不过我意识到，仅仅靠这些，想写出一个像样子的Bot是远远不够的。   从之前的阅读可以发现，Dota2的Bot脚本是“重写”机制的，你没有实现的部分将又默认系统实现，这就要求我们对系统自带的AI有所了解。当然，对一些相关API的了解也是基础。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ohvmg8dgt.bkt.clouddn.com/1024x768_84fd96ab1bd01b6.jpg">
+<meta property="og:image" content="http://ohvmg8dgt.bkt.clouddn.com/Dragon_Slave_icon.png">
+<meta property="og:image" content="http://ohvmg8dgt.bkt.clouddn.com/Laguna_Blade_icon.png">
+<meta property="og:image" content="http://ohvmg8dgt.bkt.clouddn.com/dota_bot_1.png">
+<meta property="og:image" content="http://ohvmg8dgt.bkt.clouddn.com/dota_bot_2.png">
+<meta property="og:image" content="http://ohvmg8dgt.bkt.clouddn.com/dota_bot_3.png">
+<meta property="og:updated_time" content="2017-09-18T20:16:02.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Dota2-Bot深入了解和Debug">
+<meta name="twitter:description" content="上一篇Dota2-Bot编写探索大体介绍了一下Dota2 Bot脚本的总体设计和结构，不过我意识到，仅仅靠这些，想写出一个像样子的Bot是远远不够的。   从之前的阅读可以发现，Dota2的Bot脚本是“重写”机制的，你没有实现的部分将又默认系统实现，这就要求我们对系统自带的AI有所了解。当然，对一些相关API的了解也是基础。">
+<meta name="twitter:image" content="http://ohvmg8dgt.bkt.clouddn.com/1024x768_84fd96ab1bd01b6.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"always"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '6362075437971015000',
+      author: '博主sama'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2016/12/16/Dota2-Bot深入了解和Debug/"/>
+
+
+
+
+
+  <title> Dota2-Bot深入了解和Debug | Yanjiasen4's Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">Yanjiasen4's Blog</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/12/16/Dota2-Bot深入了解和Debug/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="Yanjiasen4">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.jpg">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Yanjiasen4's Blog">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="Yanjiasen4's Blog" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Dota2-Bot深入了解和Debug
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2016-12-16T15:33:59+08:00">
+                2016-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI/" itemprop="url" rel="index">
+                    <span itemprop="name">AI</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <a href="/2016/12/16/Dota2-Bot深入了解和Debug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2016/12/16/Dota2-Bot深入了解和Debug/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p><img src="http://ohvmg8dgt.bkt.clouddn.com/1024x768_84fd96ab1bd01b6.jpg" alt="pic1"><br>上一篇<a href="http://yanjiasen4.tech/2016/12/16/Dota2-Bot%E7%BC%96%E5%86%99%E6%8E%A2%E7%B4%A2/" target="_blank" rel="noopener">Dota2-Bot编写探索</a>大体介绍了一下Dota2 Bot脚本的总体设计和结构，<br>不过我意识到，仅仅靠这些，想写出一个像样子的Bot是远远不够的。  </p>
+<p>从之前的阅读可以发现，Dota2的Bot脚本是“重写”机制的，你没有实现的部分将又默认系统实现，这就要求我们对系统自带的AI有所了解。当然，对一些相关API的了解也是基础。  </p>
+<a id="more"></a>
+<h1 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h1><h2 id="技能和物品使用主接口"><a href="#技能和物品使用主接口" class="headerlink" title="技能和物品使用主接口"></a>技能和物品使用主接口</h2><p>ability_item_usage_lina.lua<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">castLBDesire = <span class="number">0</span>;</span><br><span class="line">castLSADesire = <span class="number">0</span>;</span><br><span class="line">castDSDesire = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">AbilityUsageThink</span><span class="params">()</span></span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">local</span> npcBot = GetBot();</span><br><span class="line"></span><br><span class="line">	<span class="comment">-- Check if we're already using an ability</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:IsUsingAbility() ) <span class="keyword">then</span> <span class="keyword">return</span> <span class="keyword">end</span>;</span><br><span class="line"></span><br><span class="line">	abilityLSA = npcBot:GetAbilityByName( <span class="string">"lina_light_strike_array"</span> );</span><br><span class="line">	abilityDS = npcBot:GetAbilityByName( <span class="string">"lina_dragon_slave"</span> );</span><br><span class="line">	abilityLB = npcBot:GetAbilityByName( <span class="string">"lina_laguna_blade"</span> );</span><br><span class="line"></span><br><span class="line">	<span class="comment">-- Consider using each ability</span></span><br><span class="line">	castLBDesire, castLBTarget = ConsiderLagunaBlade();</span><br><span class="line">	castLSADesire, castLSALocation = ConsiderLightStrikeArray();</span><br><span class="line">	castDSDesire, castDSLocation = ConsiderDragonSlave();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( castLBDesire &gt; castLSADesire <span class="keyword">and</span> castLBDesire &gt; castDSDesire ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		npcBot:Action_UseAbilityOnEntity( abilityLB, castLBTarget );</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( castLSADesire &gt; <span class="number">0</span> ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		npcBot:Action_UseAbilityOnLocation( abilityLSA, castLSALocation );</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( castDSDesire &gt; <span class="number">0</span> ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		npcBot:Action_UseAbilityOnLocation( abilityDS, castDSLocation );</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="Lua语言"><a href="#Lua语言" class="headerlink" title="Lua语言"></a>Lua语言</h2><p>lina的技能和物品使用AI脚本。首先介绍一下Lua语言吧，作为号称最轻量级的脚本语言，Lua通常被用在游戏、nginx中。语言本体是C实现的，语言风格也是类C的。还有一些基础特性值得注意  </p>
+<ul>
+<li>区分大小写，跟C一样没什么好说的。</li>
+<li>变量默认为全局，除非加了<code>local</code>关键字限定。</li>
+<li>同javascript一样，Lua对变量类型也是隐式声明的，其实Lua的变量分8种类型，并且其中的数字Number实际都是double类型。  </li>
+<li>函数长得跟javascript也很像，返回值可以多个。  </li>
+<li>不等的判断是~=</li>
+</ul>
+<p>不过不用担心，对Lua不熟悉也没关系，配合百度简单的使用问题不大。下面我们看看这个示例代码  </p>
+<h2 id="如何让Bot选择释放的技能"><a href="#如何让Bot选择释放的技能" class="headerlink" title="如何让Bot选择释放的技能"></a>如何让Bot选择释放的技能</h2><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">castLBDesire = <span class="number">0</span>;</span><br><span class="line">castLSADesire = <span class="number">0</span>;</span><br><span class="line">castDSDesire = <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<p>三个变量的定义，分别代表莉娜对其三个技能释放的<del>欲望值</del>意愿值(Desire)，其实就是根据一系列对当前局势的判断估算出某个技能被释放的价值是多少。然后就是关键的<code>AbilityUsageThink</code>函数了，这个函数每一帧会调用一次，Bot技能的释放将在这里被处理。  </p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">AbilityUsageThink</span><span class="params">()</span></span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">local</span> npcBot = GetBot();</span><br><span class="line"></span><br><span class="line">	<span class="comment">-- Check if we're already using an ability</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:IsUsingAbility() ) <span class="keyword">then</span> <span class="keyword">return</span> <span class="keyword">end</span>;</span><br><span class="line"></span><br><span class="line">	abilityLSA = npcBot:GetAbilityByName( <span class="string">"lina_light_strike_array"</span> );</span><br><span class="line">	abilityDS = npcBot:GetAbilityByName( <span class="string">"lina_dragon_slave"</span> );</span><br><span class="line">	abilityLB = npcBot:GetAbilityByName( <span class="string">"lina_laguna_blade"</span> );</span><br><span class="line"></span><br><span class="line">    <span class="comment">-- Consider using each ability</span></span><br><span class="line">	castLBDesire, castLBTarget = ConsiderLagunaBlade();</span><br><span class="line">	castLSADesire, castLSALocation = ConsiderLightStrikeArray();</span><br><span class="line">	castDSDesire, castDSLocation = ConsiderDragonSlave();</span><br></pre></td></tr></table></figure>
+<p>使用局部变量<code>npcBot</code>并调用<code>GetBot</code>得到LinaBot的实例。然后先检查当前帧是否正在释放技能。如果没有，则通过<code>GetAbilityByName</code>接口得到莉娜的三个技能对象，在下面可能的释放中会用到。然后调用三个函数得到三个技能各自的释放期望<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( castLBDesire &gt; castLSADesire <span class="keyword">and</span> castLBDesire &gt; castDSDesire ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		npcBot:Action_UseAbilityOnEntity( abilityLB, castLBTarget );</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( castLSADesire &gt; <span class="number">0</span> ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		npcBot:Action_UseAbilityOnLocation( abilityLSA, castLSALocation );</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( castDSDesire &gt; <span class="number">0</span> ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		npcBot:Action_UseAbilityOnLocation( abilityDS, castDSLocation );</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<p>根据上面得到的期望值，设置机器人莉娜的技能释放。这个函数的写法比较regular，对每个技能做一次价值的估算，然后释放价值最大的那个或是选择不用技能。具体到某个技能的决策，则就要根据技能的特点来写了<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">ConsiderDragonSlave</span><span class="params">()</span></span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">local</span> npcBot = GetBot();</span><br><span class="line"></span><br><span class="line">	<span class="comment">-- Make sure it's castable</span></span><br><span class="line">	<span class="keyword">if</span> ( <span class="keyword">not</span> abilityDS:IsFullyCastable() ) <span class="keyword">then</span> </span><br><span class="line">		<span class="keyword">return</span> BOT_ACTION_DESIRE_NONE, <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">end</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">-- If we want to cast Laguna Blade at all, bail</span></span><br><span class="line">	<span class="keyword">if</span> ( castLBDesire &gt; <span class="number">0</span> ) <span class="keyword">then</span></span><br><span class="line">		<span class="keyword">return</span> BOT_ACTION_DESIRE_NONE, <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">-- Get some of its values</span></span><br><span class="line">	<span class="keyword">local</span> nRadius = abilityDS:GetSpecialValueInt( <span class="string">"dragon_slave_width_end"</span> );</span><br><span class="line">	<span class="keyword">local</span> nCastRange = abilityDS:GetCastRange();</span><br><span class="line">	<span class="keyword">local</span> nDamage = abilityDS:GetAbilityDamage();</span><br><span class="line"></span><br><span class="line">	<span class="comment">--------------------------------------</span></span><br><span class="line">	<span class="comment">-- Mode based usage</span></span><br><span class="line">	<span class="comment">--------------------------------------</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">-- If we're farming and can kill 3+ creeps with LSA</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:GetActiveMode() == BOT_MODE_FARM ) <span class="keyword">then</span></span><br><span class="line">		<span class="keyword">local</span> locationAoE = npcBot:FindAoELocation( <span class="literal">true</span>, <span class="literal">false</span>, npcBot:GetLocation(), nCastRange, nRadius, <span class="number">0</span>, nDamage );</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( locationAoE.count &gt;= <span class="number">3</span> ) <span class="keyword">then</span></span><br><span class="line">			<span class="keyword">return</span> BOT_ACTION_DESIRE_LOW, locationAoE.targetloc;</span><br><span class="line">		<span class="keyword">end</span></span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">-- If we're pushing or defending a lane and can hit 4+ creeps, go for it</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:GetActiveMode() == BOT_MODE_PUSH_TOWER_TOP <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_PUSH_TOWER_MID <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_PUSH_TOWER_BOTTOM <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_DEFEND_TOWER_TOP <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_DEFEND_TOWER_MID <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_DEFEND_TOWER_BOTTOM ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		<span class="keyword">local</span> locationAoE = npcBot:FindAoELocation( <span class="literal">true</span>, <span class="literal">false</span>, npcBot:GetLocation(), nCastRange, nRadius, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( locationAoE.count &gt;= <span class="number">4</span> ) </span><br><span class="line">		<span class="keyword">then</span></span><br><span class="line">			<span class="keyword">return</span> BOT_ACTION_DESIRE_LOW, locationAoE.targetloc;</span><br><span class="line">		<span class="keyword">end</span></span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">-- If we're going after someone</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:GetActiveMode() == BOT_MODE_ROAM <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_TEAM_ROAM <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_GANK <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_DEFEND_ALLY ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		<span class="keyword">local</span> npcTarget = npcBot:GetTarget();</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( npcTarget ~= <span class="literal">nil</span> ) </span><br><span class="line">		<span class="keyword">then</span></span><br><span class="line">			<span class="keyword">if</span> ( CanCastDragonSlaveOnTarget( npcTarget ) )</span><br><span class="line">			<span class="keyword">then</span></span><br><span class="line">				<span class="keyword">return</span> BOT_ACTION_DESIRE_MODERATE, npcEnemy:GetLocation();</span><br><span class="line">			<span class="keyword">end</span></span><br><span class="line">		<span class="keyword">end</span></span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> BOT_ACTION_DESIRE_NONE, <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<p>上面的是莉娜对技能龙破斩释放的释放价值计算函数<code>ConsiderDragonSlave</code>。这个函数会返回释放该技能的意愿程度和一些与释放技能相关的信息（如技能目标，位置等）。意愿程度从无到最高分为：</p>
+<ul>
+<li>BOT_ACTION_DESIRE_NONE</li>
+<li>BOT_ACTION_DESIRE_LOW</li>
+<li>BOT_ACTION_DESIRE_MODERATE</li>
+<li>BOT_ACTION_DESIRE_HIGH</li>
+</ul>
+<p><img src="http://ohvmg8dgt.bkt.clouddn.com/Dragon_Slave_icon.png" alt="pic2"></p>
+<p>还记得上面所说的Lua的特性吗，变量默认情况下都是全局的，所以这里第六行可以直接使用在<code>AbilityUsageThink</code>中定义的变量<code>abilityDS</code>。首先判断技能能否被释放，就是是不是没有在转CD状态。<br>然后这个AI被设置为如果有放大招灭神斩的意图，就让选择放弃这个技能的决策，直接返回，优先释放大招。  </p>
+<p><img src="http://ohvmg8dgt.bkt.clouddn.com/Laguna_Blade_icon.png" alt="pic3">  </p>
+<p>（你是大招了不起啊？！）  </p>
+<p>其实这样设置有一定的道理，在对灭神斩的决策函数<code>ConsiderLagunaBlade</code>中，有两个释放神灭斩的条件：<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- If a mode has set a target, and we can kill them, do it</span></span><br><span class="line"><span class="keyword">local</span> npcTarget = npcBot:GetTarget();</span><br><span class="line"><span class="keyword">if</span> ( npcTarget ~= <span class="literal">nil</span> <span class="keyword">and</span> CanCastLagunaBladeOnTarget( npcTarget ) )</span><br><span class="line"><span class="keyword">then</span></span><br><span class="line">	<span class="keyword">if</span> ( npcTarget:GetActualDamage( nDamage, eDamageType ) &gt; npcTarget:GetHealth() <span class="keyword">and</span> UnitToUnitDistance( npcTarget, npcBot ) &lt; ( nCastRange + <span class="number">200</span> ) )</span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		<span class="keyword">return</span> BOT_ACTION_DESIRE_HIGH, npcTarget;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<p>如果当前模式设置的目标能够被神灭斩秒杀<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- If we're in a teamfight, use it on the scariest enemy</span></span><br><span class="line"><span class="keyword">local</span> tableNearbyAttackingAlliedHeroes = npcBot:GetNearbyHeroes( <span class="number">1000</span>, <span class="literal">false</span>, BOT_MODE_ATTACK );</span><br><span class="line"><span class="keyword">if</span> ( #tableNearbyAttackingAlliedHeroes &gt;= <span class="number">2</span> ) </span><br><span class="line"><span class="keyword">then</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">local</span> npcMostDangerousEnemy = <span class="literal">nil</span>;</span><br><span class="line">	<span class="keyword">local</span> nMostDangerousDamage = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">local</span> tableNearbyEnemyHeroes = npcBot:GetNearbyHeroes( nCastRange, <span class="literal">true</span>, BOT_MODE_NONE );</span><br><span class="line">	<span class="keyword">for</span> _,npcEnemy <span class="keyword">in</span> <span class="built_in">pairs</span>( tableNearbyEnemyHeroes )</span><br><span class="line">	<span class="keyword">do</span></span><br><span class="line">		<span class="keyword">if</span> ( CanCastLagunaBladeOnTarget( npcEnemy ) )</span><br><span class="line">		<span class="keyword">then</span></span><br><span class="line">			<span class="keyword">local</span> nDamage = npcEnemy:GetEstimatedDamageToTarget( <span class="literal">false</span>, npcBot, <span class="number">3.0</span>, DAMAGE_TYPE_ALL );</span><br><span class="line">			<span class="keyword">if</span> ( nDamage &gt; nMostDangerousDamage )</span><br><span class="line">			<span class="keyword">then</span></span><br><span class="line">				nMostDangerousDamage = nDamage;</span><br><span class="line">				npcMostDangerousEnemy = npcEnemy;</span><br><span class="line">			<span class="keyword">end</span></span><br><span class="line">		<span class="keyword">end</span></span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( npcMostDangerousEnemy ~= <span class="literal">nil</span> )</span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		<span class="keyword">return</span> BOT_ACTION_DESIRE_HIGH, npcMostDangerousEnemy;</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<p>如果在打团，就对最后威胁的敌人释放。  </p>
+<p>好像跑题了……咳咳,我们继续看龙破斩。<br><figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- If we're pushing or defending a lane and can hit 4+ creeps, go for it</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:GetActiveMode() == BOT_MODE_PUSH_TOWER_TOP <span class="keyword">or</span></span><br><span class="line">	     npcBot:GetActiveMode() == BOT_MODE_PUSH_TOWER_MID <span class="keyword">or</span></span><br><span class="line">	     npcBot:GetActiveMode() == BOT_MODE_PUSH_TOWER_BOTTOM <span class="keyword">or</span></span><br><span class="line">	     npcBot:GetActiveMode() == BOT_MODE_DEFEND_TOWER_TOP <span class="keyword">or</span></span><br><span class="line">	     npcBot:GetActiveMode() == BOT_MODE_DEFEND_TOWER_MID <span class="keyword">or</span></span><br><span class="line">	     npcBot:GetActiveMode() == BOT_MODE_DEFEND_TOWER_BOTTOM ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">	     <span class="keyword">local</span> locationAoE = npcBot:FindAoELocation( <span class="literal">true</span>, <span class="literal">false</span>, npcBot:GetLocation(), nCastRange, nRadius, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line"></span><br><span class="line">	     <span class="keyword">if</span> ( locationAoE.count &gt;= <span class="number">4</span> ) </span><br><span class="line">	     <span class="keyword">then</span></span><br><span class="line">	        <span class="keyword">return</span> BOT_ACTION_DESIRE_LOW, locationAoE.targetloc;</span><br><span class="line">	     <span class="keyword">end</span></span><br><span class="line">         <span class="keyword">end</span></span><br></pre></td></tr></table></figure></p>
+<p>嗯，收兵D，能杀四个以上才放，没毛病。  </p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- If we're going after someone</span></span><br><span class="line">	<span class="keyword">if</span> ( npcBot:GetActiveMode() == BOT_MODE_ROAM <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_TEAM_ROAM <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_GANK <span class="keyword">or</span></span><br><span class="line">		 npcBot:GetActiveMode() == BOT_MODE_DEFEND_ALLY ) </span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		<span class="keyword">local</span> npcTarget = npcBot:GetTarget();</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( npcTarget ~= <span class="literal">nil</span> ) </span><br><span class="line">		<span class="keyword">then</span></span><br><span class="line">			<span class="keyword">if</span> ( CanCastDragonSlaveOnTarget( npcTarget ) )</span><br><span class="line">			<span class="keyword">then</span></span><br><span class="line">				<span class="keyword">return</span> BOT_ACTION_DESIRE_MODERATE, npcEnemy:GetLocation();</span><br><span class="line">			<span class="keyword">end</span></span><br><span class="line">		<span class="keyword">end</span></span><br><span class="line">	<span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>在ROAM、TEAM_ROAM、GANK和DEFEND_ALLY模式下，如果能够对目标释放龙破斩，就返回一个中等级别的释放请求。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里，每一帧Bot对技能的决策就清楚了：</p>
+<ol>
+<li>调用单个技能的Consider（意愿）函数，获得它们的意愿值</li>
+<li>通过调用主接口<code>AbilityUsageThink</code>根据第一步获得的每个技能的意愿值决定技能的释放  </li>
+</ol>
+<p>当然这只是根据玩家的一些经验，对Bot做出的设置，还有许多可以优化的地方。而且最重要的一点是，我们写了一个自认为不错的Bot逻辑，但在实战中出现的各种复杂状况，很有可能让这个逻辑变得不符合逻辑。要解决这个问题，就需要Debug。</p>
+<h1 id="Debuging"><a href="#Debuging" class="headerlink" title="Debuging"></a>Debuging</h1><h2 id="最愉悦也最痛苦的Debug"><a href="#最愉悦也最痛苦的Debug" class="headerlink" title="最愉悦也最痛苦的Debug"></a>最愉悦也最痛苦的Debug</h2><p>一般程序最简单的Debug过程就是run一遍，或是设置一些断点，单步执行，gdb打印一些关键值。总结起来就是运行（部分）、观察（可能出错的）变量。  </p>
+<p>对Dota2 Bot脚本的Debug也不例外，你需要进游戏跟你的Bot脚本站在Dota2的战场上，也就是run你的脚本，才能进行Debug。而观察这一步则可以通过dota2提供的<code>控制台/console</code>来实现。  </p>
+<p>在Dota2游戏中自建一个房间填充AI，然后进入游戏，按’\‘建打开控制台，输入<code>dota_bot</code>即可看到几个相关指令。  </p>
+<h3 id="dota-bot-debug-team"><a href="#dota-bot-debug-team" class="headerlink" title="dota_bot_debug_team"></a>dota_bot_debug_team</h3><p>输入这个指令加上空格和一个数字（2表示天辉、3表示夜魇）会在屏幕的左上角开启一个数据面板，可以看到许多有用的信息，包括：</p>
+<ol>
+<li>团队级别中，对推塔、刷钱、防守和打肉山的意愿等级</li>
+<li>Bot的名字和等级</li>
+<li>Bot当前的最大’power’ levels，关于什么是power levels后面会讲到。</li>
+<li>当前被选中的模式和改模式的意愿值</li>
+<li>一个Bot的所有模式的意愿值</li>
+<li>（如果存在）当前Bot的目标</li>
+<li>每个Bot“思考”的时间和总共“思考”的时间<br><img src="http://ohvmg8dgt.bkt.clouddn.com/dota_bot_1.png" alt="pic3"><br>（这个Lanning Desire翻译成“对线欲望”是什么鬼）</li>
+</ol>
+<h3 id="dota-bot-debug-gird-dota-bot-debug-minimap"><a href="#dota-bot-debug-gird-dota-bot-debug-minimap" class="headerlink" title="dota_bot_debug_gird\dota_bot_debug_minimap"></a>dota_bot_debug_gird\dota_bot_debug_minimap</h3><p>这个两个指令会在地图上现实一些辅助线以助调试，指令后面的参数决定显示的内容：</p>
+<ul>
+<li>0- 关闭</li>
+<li>1 - 用红色标记天辉Bot应当回避的区域</li>
+<li>2 - 用红色标记夜魇Bot应当回避的区域</li>
+<li>3 - 天辉敌人的潜在位置</li>
+<li>4 - 夜魇敌人的潜在位置</li>
+<li>5 - 天辉敌人的视野</li>
+<li>6 - 夜魇敌人的视野</li>
+<li>7 - 高度图（就是地图的高度）</li>
+<li>8 - 通过性，显示一些不能通过的地区  </li>
+</ul>
+<h3 id="dota-bot-select-debug"><a href="#dota-bot-select-debug" class="headerlink" title="dota_bot_select_debug"></a>dota_bot_select_debug</h3><p>对选中的Bot显示额外信息。大概就是这个效果<br><img src="http://ohvmg8dgt.bkt.clouddn.com/dota_bot_2.png" alt="pic4"><br>可以看到对面宙斯身上有几行字，不过这字体和颜色实在费眼睛……  </p>
+<h3 id="dota-bot-select-debug-attack"><a href="#dota-bot-select-debug-attack" class="headerlink" title="dota_bot_select_debug_attack"></a>dota_bot_select_debug_attack</h3><p>显示某个Bot对附近的单位的攻击意愿倾向，需要注意的是这两个”select”的指令生效貌似有延迟。</p>
+<h3 id="dota-bot-debug-clear"><a href="#dota-bot-debug-clear" class="headerlink" title="dota_bot_debug_clear"></a>dota_bot_debug_clear</h3><p>清楚上面两个指令的效果</p>
+<h3 id="dota-bot-debug-lanes"><a href="#dota-bot-debug-lanes" class="headerlink" title="dota_bot_debug_lanes"></a>dota_bot_debug_lanes</h3><p>显示所有的“线”，包括双方的上中下三路。  </p>
+<h3 id="dota-bot-debug-ward-locations"><a href="#dota-bot-debug-ward-locations" class="headerlink" title="dota_bot_debug_ward_locations"></a>dota_bot_debug_ward_locations</h3><p>显示Bot猜测可能有眼的位置（Bot会反眼？） </p>
+<h2 id="其他概念"><a href="#其他概念" class="headerlink" title="其他概念"></a>其他概念</h2><p>有了这些工具，我们的Debug之路会简单一些，但是上面提到了一些AI设计中的概念，我们必须了解。</p>
+<h3 id="潜在位置"><a href="#潜在位置" class="headerlink" title="潜在位置"></a>潜在位置</h3><p>Bot的Team每帧会计算对面消失英雄可能在的位置及其概率，称为潜在位置，每个可能在的位置用一个0到255的整数表示其可能性大小，并且这个位置对应着上面所说的gird网格。<br><img src="http://ohvmg8dgt.bkt.clouddn.com/dota_bot_3.png" alt="pic5"><br>小地图上的红色系区域即夜魇Bot战队猜测我可能所在的地区概率分布。  </p>
+<p>这个猜测使用了<code>floodfill</code>算法，这里不再赘述，但是其仍旧有一些局限性：  </p>
+<ul>
+<li>没有对TP或者对移动有帮助（如加速符、变狼、闪烁等）的技能考虑在内</li>
+<li>计算不考虑英雄消失的原因或根据消失的位置进行预测（比如残血消失大概率是回家） </li>
+</ul>
+<h3 id="英雄的“力量”Power"><a href="#英雄的“力量”Power" class="headerlink" title="英雄的“力量”Power"></a>英雄的“力量”Power</h3><p><del>反正完美这样翻译的我不背锅</del><br>刚刚提到在<code>dota_bot_debug_team</code>面板上有显示英雄的Power Levels这一数据，那么英雄的Power到底是什么呢？  </p>
+<p>它是对一个英雄当前综合能力的一个粗略估计，我方哪个队友最有用（保了个废物），对面哪个英雄对你威胁最大（拉谁说话），许多决策都需要这一概念来帮助。那么英雄的能力值是如何被计算的呢？  </p>
+<ul>
+<li>对对方的每个英雄单独计算</li>
+<li>计算一个英雄5秒内的输出，对于有控制技能的英雄，加上这个控制的时间，有减速技能的英雄，加上减速时间的一半</li>
+<li>这个输出包括技能，而技能的计算包括抬手、消耗、沉默状态等因素</li>
+<li>伤害的计算还把攻击特效和debuffs计算在内</li>
+<li>这个伤害值是假设平均地打在对方所有英雄身上的  </li>
+</ul>
+<p>可以看出这个能力值的计算确实有些粗糙，但是在多数情况下，确实是一个简单而有效的指标。  </p>
+<p>未完待续……</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+  <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+    <div>坚持原创技术分享，您的支持将鼓励我继续创作！</div>
+    <button id="rewardButton" disable="enable" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+      <span>赏</span>
+    </button>
+    <div id="QR" style="display: none;">
+      
+        <div id="wechat" style="display: inline-block">
+          <img id="wechat_qr" src="http://ohvmg8dgt.bkt.clouddn.com/weixin_pay.png" alt="Yanjiasen4 WeChat Pay"/>
+          <p>微信打赏</p>
+        </div>
+      
+      
+        <div id="alipay" style="display: inline-block">
+          <img id="alipay_qr" src="http://ohvmg8dgt.bkt.clouddn.com/alipay_pay.png" alt="Yanjiasen4 Alipay"/>
+          <p>支付宝打赏</p>
+        </div>
+      
+    </div>
+  </div>
+
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/AI/" rel="tag"># AI</a>
+          
+            <a href="/tags/Lua/" rel="tag"># Lua</a>
+          
+            <a href="/tags/Dota2/" rel="tag"># Dota2</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/12/16/Dota2-Bot编写探索/" rel="next" title="Dota2 Bot编写探索">
+                <i class="fa fa-chevron-left"></i> Dota2 Bot编写探索
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/12/18/使用红黑树实现一个map（三）/" rel="prev" title="使用红黑树实现一个map（三）">
+                使用红黑树实现一个map（三） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+        <div class="ds-share flat" data-thread-key="2016/12/16/Dota2-Bot深入了解和Debug/"
+     data-title="Dota2-Bot深入了解和Debug"
+     data-content=""
+     data-url="http://yoursite.com/2016/12/16/Dota2-Bot深入了解和Debug/">
+  <div class="ds-share-inline">
+    <ul  class="ds-share-icons-16">
+
+      <li data-toggle="ds-share-icons-more"><a class="ds-more" href="javascript:void(0);">分享到：</a></li>
+      <li><a class="ds-weibo" href="javascript:void(0);" data-service="weibo">微博</a></li>
+      <li><a class="ds-qzone" href="javascript:void(0);" data-service="qzone">QQ空间</a></li>
+      <li><a class="ds-qqt" href="javascript:void(0);" data-service="qqt">腾讯微博</a></li>
+      <li><a class="ds-wechat" href="javascript:void(0);" data-service="wechat">微信</a></li>
+
+    </ul>
+    <div class="ds-share-icons-more">
+    </div>
+  </div>
+</div>
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2016/12/16/Dota2-Bot深入了解和Debug/"
+           data-title="Dota2-Bot深入了解和Debug" data-url="http://yoursite.com/2016/12/16/Dota2-Bot深入了解和Debug/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.jpg"
+               alt="Yanjiasen4" />
+          <p class="site-author-name" itemprop="name">Yanjiasen4</p>
+          <p class="site-description motion-element" itemprop="description"></p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">14</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">35</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/yanjiasen4" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://steamcommunity.com/id/yanjiasen4/" target="_blank" title="Steam">
+                  
+                    <i class="fa fa-fw fa-steam"></i>
+                  
+                  Steam
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#代码分析"><span class="nav-number">1.</span> <span class="nav-text">代码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#技能和物品使用主接口"><span class="nav-number">1.1.</span> <span class="nav-text">技能和物品使用主接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Lua语言"><span class="nav-number">1.2.</span> <span class="nav-text">Lua语言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何让Bot选择释放的技能"><span class="nav-number">1.3.</span> <span class="nav-text">如何让Bot选择释放的技能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Debuging"><span class="nav-number">2.</span> <span class="nav-text">Debuging</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#最愉悦也最痛苦的Debug"><span class="nav-number">2.1.</span> <span class="nav-text">最愉悦也最痛苦的Debug</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-debug-team"><span class="nav-number">2.1.1.</span> <span class="nav-text">dota_bot_debug_team</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-debug-gird-dota-bot-debug-minimap"><span class="nav-number">2.1.2.</span> <span class="nav-text">dota_bot_debug_gird\dota_bot_debug_minimap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-select-debug"><span class="nav-number">2.1.3.</span> <span class="nav-text">dota_bot_select_debug</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-select-debug-attack"><span class="nav-number">2.1.4.</span> <span class="nav-text">dota_bot_select_debug_attack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-debug-clear"><span class="nav-number">2.1.5.</span> <span class="nav-text">dota_bot_debug_clear</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-debug-lanes"><span class="nav-number">2.1.6.</span> <span class="nav-text">dota_bot_debug_lanes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dota-bot-debug-ward-locations"><span class="nav-number">2.1.7.</span> <span class="nav-text">dota_bot_debug_ward_locations</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#其他概念"><span class="nav-number">2.2.</span> <span class="nav-text">其他概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#潜在位置"><span class="nav-number">2.2.1.</span> <span class="nav-text">潜在位置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#英雄的“力量”Power"><span class="nav-number">2.2.2.</span> <span class="nav-text">英雄的“力量”Power</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Yanjiasen4</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+
+        
+
+<div class="busuanzi-count">
+
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv"><i class="fa fa-user"></i><span class="busuanzi-value" id="busuanzi_value_site_uv"></span></span>
+  
+
+  
+    <span class="site-pv"><i class="fa fa-eye"></i><span class="busuanzi-value" id="busuanzi_value_site_pv"></span></span>
+  
+  
+</div>
+
+
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"yanjiasen4"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+      
+      <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+      <script src="/js/src/hook-duoshuo.js?v=5.1.0"></script>
+    
+    
+    <script src="/lib/ua-parser-js/dist/ua-parser.min.js?v=0.7.9"></script>
+    <script src="/js/src/hook-duoshuo.js"></script>
+  
+
+
+
+
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+</body>
+</html>
